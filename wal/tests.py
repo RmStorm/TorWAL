@@ -1,12 +1,12 @@
 import unittest
-from utils import system_cmd
-from utils import cmd_output
+
+from utils import system_cmd, cmd_output, cmd_exitcode
 from system import LinuxX
 from stats import pretty_dur
+from wal import NEEDED_PACKAGES
 
 
 class TestUtils(unittest.TestCase):
-
     def test_system_cmd_stdout(self):
         exit_code, std_out, std_err = system_cmd("echo hei")
         self.assertEqual(std_out, "hei\n")
@@ -28,6 +28,10 @@ class TestUtils(unittest.TestCase):
         exit_code, std_out, std_err = system_cmd("command-should-not-be-found")
         self.assertNotEqual(exit_code, 0)
 
+    def test_required_packages(self):
+        for package in NEEDED_PACKAGES:
+            assert cmd_exitcode(f"which {package}") == 0
+
 
 class TestSystem(unittest.TestCase):
     def test_active_window(self):
@@ -44,7 +48,6 @@ class TestSystem(unittest.TestCase):
 
 
 class TestStats(unittest.TestCase):
-
     def test_pretty_dur(self):
         self.assertEqual(pretty_dur(60), "1h00m")
         self.assertEqual(pretty_dur(0), "0h00m")
@@ -53,5 +56,5 @@ class TestStats(unittest.TestCase):
         self.assertEqual(pretty_dur(-70), "-1h10m")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

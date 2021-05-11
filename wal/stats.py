@@ -12,13 +12,11 @@ def ignore_where():
 def pretty_dur(total_mins):
     sign = "-" if total_mins < 0 else ""
     total_mins = abs(total_mins)
-    hours = int(total_mins / 60)
-    mins = str(int(total_mins % 60)).zfill(2)
-    return f"{sign}{hours}h{mins}m"
+    return f"{sign}{int(total_mins / 60)}h{total_mins % 60:05.2f}m"
 
 
 def active_windows(connection, limit, since):
-    print(f"--- Top {limit} active windows since {since} ---")
+    print(f"\n--- Top {limit} active windows since {since} ---")
     cursor = connection.cursor()
 
     query = f"""SELECT count(*) as count, active_win, category FROM x_log
@@ -34,16 +32,17 @@ def active_windows(connection, limit, since):
 
     cursor.execute(query)
     rows = cursor.fetchall()
+    max_active_win_len = max(len(row[1]) for row in rows if row[1])
     for row in rows:
         count = row[0]
         active_win = row[1]
         category = row[2]
-        mins = round(count / 6, 2)
-        time = pretty_dur(mins)
-        print(f"{time} of {active_win} ({category})")
+        time = pretty_dur(count / 6)
+        print(f"{time} of {active_win:{max_active_win_len}} ({category})")
 
-def top_uncategorised(connection, limit, since):
-    print(f"--- Top {limit} uncategories since {since} ---")
+
+def top_uncategorized(connection, limit, since):
+    print(f"\n--- Top {limit} uncategorized since {since} ---")
     cursor = connection.cursor()
 
     query = f"""SELECT count(*) as ticks, active_win FROM x_log
@@ -64,12 +63,12 @@ def top_uncategorised(connection, limit, since):
     for row in rows:
         ticks = row[0]
         active_win = row[1]
-        mins = round(ticks / 6, 2)
-        time = pretty_dur(mins)
+        time = pretty_dur(ticks / 6)
         print(f"{time} of {active_win}")
 
+
 def top_categories(connection, limit, since):
-    print(f"--- Top {limit} categories since {since} ---")
+    print(f"\n--- Top {limit} categories since {since} ---")
     cursor = connection.cursor()
 
     query = f"""SELECT count(*) as count, category FROM x_log
@@ -92,15 +91,14 @@ def top_categories(connection, limit, since):
 
     for row in rows:
         count = row[0]
-        active_win = row[1] or "Uncatagories"
-        mins = round(count / 6, 2)
-        time = pretty_dur(mins)
+        active_win = row[1] or "Uncategorized"
+        time = pretty_dur(count / 6)
         percent = round(count / total_ticks * 100)
-        print(f"{time} ({percent}%) of {active_win}")
+        print(f"{time} ({percent:>2}%) of {active_win}")
 
 
 def active_time_per_day(connection, limit, since):
-    print("--- Active time (at all hours) ---")
+    print("\n--- Active time (at all hours) ---")
 
     cursor = connection.cursor()
     query = f"""
@@ -128,23 +126,25 @@ def active_time_per_day(connection, limit, since):
         date, day, ticks = row[0], int(row[1]), row[2]
         total += ticks
 
-        if day in [1,2,3,4,5] and day not in config.LEAVE_DAYS:
+        if day in [1, 2, 3, 4, 5] and day not in config.LEAVE_DAYS:
             intraday_balance = ticks - (7.5 * 60 * 6)
-        if day in [6,0]: # Sat or Sun
+        if day in [6, 0]:  # Sat or Sun
             intraday_balance = ticks
 
         time_bank += intraday_balance
         pretty_intraday_balance = pretty_dur(intraday_balance / 6)
         pretty_active_hours = pretty_dur(ticks / 6)
-        name_of_days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-        print(f"{date} ({name_of_days[day]}): {pretty_active_hours} ({pretty_intraday_balance})")
+        name_of_days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        print(
+            f"{date} ({name_of_days[day]}): {pretty_active_hours} ({pretty_intraday_balance})"
+        )
 
     print(pretty_dur(total / 6), "total")
     print(pretty_dur(time_bank / 6), "off balance during this period")
 
 
 def show_stats(connection, limit, since):
-    top_uncategorised(connection, limit, since)
+    top_uncategorized(connection, limit, since)
     active_windows(connection, limit, since)
     top_categories(connection, limit, since)
     active_time_per_day(connection, limit, since)

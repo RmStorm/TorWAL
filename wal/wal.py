@@ -9,6 +9,8 @@ import config
 import stats
 from utils import cmd_exitcode
 
+NEEDED_PACKAGES = ["xprintidle"]
+
 
 def register_activity(connection):
     if config.ACTIVITY_FILTER_CMD:
@@ -28,8 +30,8 @@ def register_activity(connection):
 
 
 def pre_check():
-    for package in config.NEEDED_PACKAGES:
-        if cmd_exitcode(f"whereis {package}") != 0:
+    for package in NEEDED_PACKAGES:
+        if cmd_exitcode(f"which {package}") != 0:
             print(f"You need to install {package}")
 
 
@@ -54,7 +56,7 @@ def setup_sqlite():
     return connection
 
 
-if __name__ == "__main__":
+def main():
     pre_check()
     connection = setup_sqlite()
 
@@ -70,16 +72,17 @@ if __name__ == "__main__":
     stats_parser.add_argument(
         "--limit",
         dest="limit",
-        help="(stats) Show number of items in stats tables",
+        help="Show number of items in stats tables",
         default=10,
-        metavar=10,
+        metavar="N",
         type=int,
     )
+    today = date.today().strftime("%Y-%m-%d")
     stats_parser.add_argument(
         "--since",
         dest="since",
-        help="(stats) Show stance since YYYY-MM-DD (defaults to today)",
-        default=date.today().strftime("%Y-%m-%d"),
+        help=f"Show stance since YYYY-MM-DD (defaults to today: '{today}')",
+        default=today,
         metavar="YYY-MM-DD",
     )
 
@@ -92,3 +95,7 @@ if __name__ == "__main__":
         register_activity(connection)
     else:
         parser.print_help(sys.stderr)
+
+
+if __name__ == "__main__":
+    main()

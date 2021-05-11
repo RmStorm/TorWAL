@@ -35,6 +35,4 @@ PATTERNS_CATEGORIES = [
     ("%Signal%", "Signal"),
 ]
 
-NEEDED_PACKAGES = ["xprintidle", "xdotool"]
-
 system_interface = system.LinuxX
